@@ -1,0 +1,23 @@
+- name: Trabajar con archivos
+  hosts: 10.2.1.136
+
+  vars:
+    fichero: /tmp/prueba.txt
+
+  tasks:
+    - name: Crear un fichero vacío
+      ansible.builtin.file:
+        path: "{{fichero}}"
+        state: touch
+        owner: phytsvh
+        group: wheel
+        mode: 644
+        
+    
+    - name: Cambiar permisos de un fichero
+      ansible.builtin.file:
+        path: "{{fichero}}"
+        owner: phytsvh
+        group: root
+        mode: 777
+      become: True

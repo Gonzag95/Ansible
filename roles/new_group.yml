@@ -1,0 +1,10 @@
+- name: Trabajar con archivos
+  hosts: 10.2.1.136
+
+  tasks:
+    - name: Creating Docker group
+      group:
+        name: docker
+        gid: 55555
+        state: present
+      become: True

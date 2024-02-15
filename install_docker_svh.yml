@@ -1,0 +1,16 @@
+- name: Ejemplo de uso de un role dentro de una task
+  hosts: 10.2.1.136
+  become: true
+
+    # Se ejecuta antes de las tasks y el namespace es global
+  roles:
+    - roles/docker_install
+
+  # tasks:
+  #   - name: Primera tarea del play
+  #     ansible.builtin.debug:
+  #       msg: Comienza...
+  #   # Se ejecuta donde se define la tarea, y el namespace de las variables es global
+  #   - name: Importar el role
+  #     ansible.builtin.import_role:
+  #       name: roles/mariadb
