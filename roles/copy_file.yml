@@ -6,12 +6,11 @@
 
   tasks:
     - name: Crear un fichero vacío
-      ansible.builtin.file:
-        path: "{{fichero}}"
-        state: touch
+      ansible.builtin.copy:
+        dest: "{{fichero}}"
         owner: phytsvh
         group: wheel
-        value: |
+        content: |
           Esto es un texto de prueba
           Esta es otra línea de prueba
         mode: 644
@@ -23,8 +22,3 @@
         group: root
         mode: 777
       become: True
-
-    # - name: Cambiar permisos de un fichero
-    #   ansible.builtin.debug:
-    #     msg: "{{  hostvars[inventory_hostname]['USER']  }} - {{  hostvars[inventory_hostname]['GROUP']  }}" 
-    #   become: True

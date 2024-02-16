@@ -1,0 +1,7 @@
+- name: Trabajar con archivos
+  hosts: 10.2.1.136
+  
+  - name: Cambiar permisos de un fichero
+      ansible.builtin.debug:
+        msg: "{{  hostvars[inventory_hostname]['USER']  }} - {{  hostvars[inventory_hostname]['GROUP']  }}" 
+      become: True

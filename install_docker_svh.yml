@@ -1,16 +1,118 @@
-- name: Ejemplo de uso de un role dentro de una task
+- name: Instalación Docker
   hosts: 10.2.1.136
   become: true
+  become_method: sudo
 
-    # Se ejecuta antes de las tasks y el namespace es global
-  roles:
-    - roles/docker_install
+  vars:
+    docker_owner: "phytsvh"
+    docker_group: "docker"
+    docker_install_tmp_dir: "/tmp/docker-offline"
+    company: "Servihabitat"
+    environment: "svhtaasr07"
+    dos2unix_install_tmp_dir: "/tmp/dos2unix"
 
-  # tasks:
-  #   - name: Primera tarea del play
-  #     ansible.builtin.debug:
-  #       msg: Comienza...
-  #   # Se ejecuta donde se define la tarea, y el namespace de las variables es global
-  #   - name: Importar el role
-  #     ansible.builtin.import_role:
-  #       name: roles/mariadb
+  tasks:
+
+    - name: Creating Docker group
+      group:
+        name: docker
+        gid: 55555
+        state: present
+
+    - name: Creating Docker pack file folder
+      file:
+        path: "{{docker_install_tmp_dir}}"
+        state: directory
+        owner: "{{docker_owner}}" 
+        group: "{{docker_group}}"
+        mode: 0770
+        recurse: yes
+
+    - name: Installing Docker locally - Red Hat 7.9
+      block:
+        - name: Unzipping Docker pack file to temporary directory - Red Hat 7.9 installation
+          unarchive:
+            remote_src: true
+            src: "/home/phytsvh/docker/docker-deploy-redhat-7.9.tar.gz"
+            dest: "{{docker_install_tmp_dir}}"
+            owner: "{{docker_owner}}"
+            group: "{{docker_group}}"
+            mode: 0770
+
+        # - name: Setting SELinux in permissive mode
+        #   shell: setenforce 0
+        - name: Disable SELinux
+          ansible.posix.selinux:
+            state: disabled
+
+        - name: Installing Docker offline - Red Hat 7.9
+          shell: yum localinstall -y *.rpm &> /dev/null
+          args:
+            warn: false
+            chdir: "{{docker_install_tmp_dir}}"
+
+    - name: Performing common actions
+      block:
+        - name: Deploying custom configuration
+          template:
+            src: "templates/daemon.json.j2"
+            dest: /etc/docker/daemon.json
+            owner: "{{docker_owner}}"
+            group: "{{docker_group}}"
+            mode: 0644
+
+        - name: Restarting Docker service
+          systemd:
+            name: docker
+            enabled: true
+            daemon_reload: true
+            state: restarted
+
+        - name: "Adding phytsvh to docker group"
+          user:
+            name: "{{docker_owner}}"
+            groups:
+              - "{{docker_group}}"
+            append: yes
+
+        - name: Creating Dos2Unix temporary folder
+          file:
+            path: "{{dos2unix_install_tmp_dir}}"
+            state: directory
+            owner: "{{docker_owner}}"
+            group: "{{docker_group}}"
+            mode: 0770
+
+        # - name: Copy Dos2Unix from local to SVH Server
+        #   ansible.builtin.copy:
+        #     src: "files/dos2unix-redhat-7.tar.gz"
+        #     dest: "{{dos2unix_install_tmp_dir}}"
+        #     owner: "{{docker_owner}}"
+        #     group: "{{docker_group}}"
+        #     mode: 0770
+        
+        - name: Decompressing Dos2Unix
+          unarchive:
+            remote_src: false
+            src: "files/dos2unix-redhat-7.tar.gz"
+            dest: "{{dos2unix_install_tmp_dir}}"
+            owner: "{{docker_owner}}"
+            group: "{{docker_group}}"
+            mode: 0770
+
+        - name: Installing Dos2Unix
+          shell: yum localinstall -y *.rpm &> /dev/null
+          args:
+            warn: false
+            chdir: "{{dos2unix_install_tmp_dir}}"
+
+    - name: Cleaning temporary folders - CentOS
+      file: 
+        path: "{{docker_install_tmp_dir}}"
+        state: absent
+
+    - name: Cleaning temporary folders - CentOS
+      file: 
+        path: "{{dos2unix_install_tmp_dir}}"
+        state: absent
+  
